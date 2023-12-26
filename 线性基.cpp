@@ -1,8 +1,8 @@
 template <int Lim>
 struct Linear_Base{
-  int a[Lim+1] , n ;
+  int a[Lim] , n ;
   Linear_Base() {
-    n = Lim + 1 ;
+    n = Lim ;
     memset(a,0,sizeof a);
   }
   void insert(int x){//²åÈë
