@@ -1,7 +1,7 @@
 /*
-	@  author £∫jiangly 
-	@ 	‘§¥¶¿Ì£∫O(n)
-	@	≤È—Ø  £∫O(1) 
+	@  author:jiangly 
+	@  pretreatment:O(n)
+	@  Inquire:O(1) 
 */ 
 template<class T,
     class Cmp = std::less<T>>
