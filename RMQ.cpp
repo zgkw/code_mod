@@ -1,4 +1,8 @@
-
+/*
+	@  author £∫jiangly 
+	@ 	‘§¥¶¿Ì£∫O(n)
+	@	≤È—Ø  £∫O(1) 
+*/ 
 template<class T,
     class Cmp = std::less<T>>
 struct RMQ {
