@@ -6,12 +6,10 @@ struct Fastin {
     # define isdigit(x) (x >= '0' && x <= '9')
 
     char buf[MAXSIZE], *p1 = buf, *p2 = buf;
-
-    char gc() {
-        if (p1 == p2) 
-            p2 = (p1 = buf) + fread(buf, 1, MAXSIZE, stdin);
-        return p1 == p2 ? ' ' : *p1++;
-    }
+    #define gc()                                                                 \
+        (p1 == p2 && (p2 = (p1 = buf) + fread(buf, 1, MAXSIZE, stdin), p1 == p2) \
+            ? EOF                                                                \
+            : *p1++)
 
     bool blank(char ch) {
         return ch == ' ' || ch == '\n' 
@@ -58,7 +56,7 @@ struct Fastin {
         }
         return *this ;
     }
-}cin;
+}in;
 struct __setprecision {
     int precision ;
 };
@@ -68,6 +66,7 @@ struct Fastout {
 # define cout out 
 char pbuf[MAXSIZE], *pp = pbuf ;
     void push(const char &c) {
+        // putchar (c);
         if (pp - pbuf == MAXSIZE) 
             fwrite(pbuf, 1, MAXSIZE, stdout), pp = pbuf;
         *pp++ = c;
@@ -77,10 +76,14 @@ char pbuf[MAXSIZE], *pp = pbuf ;
     ~Fastout () { fwrite(pbuf, 1, pp - pbuf, stdout);}
     template<class T>
     Fastout& operator<< (const T& x) {
+        char stack[35]; int top = 0 ;
         T tmp = x ;
         bool _ = tmp < 0 ;
-        if (_) push ('-'), tmp *= -1;
-        while ( tmp ) push ('0' + (tmp % 10)), tmp /= 10;
+        if (_) tmp *= -1;
+        while (tmp) stack[++ top] = '0' + tmp % 10, tmp /= 10;
+        if (_) stack[++ top] = '-';
+        while (top) push (stack [top]), -- top; 
+        if (x == 0)push ('0');
         return *this ;
     }
     Fastout& operator<< (const string& x) {
@@ -119,4 +122,4 @@ char pbuf[MAXSIZE], *pp = pbuf ;
         precision = x.precision ;
         return *this ;
     }
-}cout;
+}out;
