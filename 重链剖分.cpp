@@ -1,172 +1,119 @@
-using i64 = int64_t ;
-
-template < typename T , bool op >
-struct CFS {
+struct HLD {
+    int n;
+    std::vector<int> siz, top, dep, parent, in, out, seq;
+    std::vector<std::vector<int>> adj;
+    int cur;
     
-    T n , m , add_cnt ;
-    vector < T > st , to , nt , w ;
-
-    CFS ( i64 n , i64 m ) : n ( n ) , m ( m ) 
-        { st.resize ( n ) , to.resize ( 2 * m + 2 ) , nt.resize ( 2 * m + 2 ) , add_cnt = 1 ;
-            if ( op ) w.resize ( 2 * m + 2 ) ;}
-
-    void add ( const i64& u , const i64& v ) {
-        to [ ++ add_cnt ] = v ; nt [ add_cnt ] = st [ u ] ; st [ u ] = add_cnt ;}
-
-    void add ( const i64& u , const i64& v , const i64& w ) {
-        to [ ++ add_cnt ] = v ; nt [ add_cnt ] = st [ u ] ; this->w [ add_cnt ] = w ; st [ u ] = add_cnt ;}
-};
-
-using gs = CFS < i64 , false > ;
-
-template <typename T>
-class SegtreeLazyRangeAdd {
-	vector<T> tree , lazy ;
-	vector<T> *arr ;
-	ll n , root , n4 , end ;
-
-	void maintain ( ll cl , ll cr , ll p ){
-		ll cm = cl + ( ( cr - cl ) >> 1 ) ;
-		if ( cl != cr && (i64) lazy [ p ] ) {
-			lazy [ p << 1 ] += lazy [ p ] ;
-			lazy [ p << 1 | 1 ] += lazy [ p ] ;
-			tree [ p << 1 ] += lazy [ p ] * ( cm - cl + 1 ) ;
-			tree [ p << 1 | 1 ] += lazy [ p ] * ( cr - cm ) ;
-			lazy [ p ] = 0 ;
-		}
-	}
-	T range_sum ( ll l , ll r , ll cl , ll cr , ll p )
-	{
-		if ( l <= cl && r >= cr ) return tree [ p ] ;
-		ll m = cl + ( ( cr - cl ) >> 1 ) ;
-		T sum = 0 ;
-		maintain ( cl , cr , p ) ;
-		if ( l <= m ) sum += range_sum ( l , r , cl , m , p << 1 ) ;
-		if ( r > m ) sum += range_sum ( l , r , m + 1 , cr , p << 1 | 1 ) ;
-		return sum ;
-	}
-	void range_add ( ll l , ll r , T val , ll cl , ll cr , ll p ) {
-		if ( l <= cl && r >= cr ) {
-			lazy [ p ] += val ;
-			tree [ p ] += ( cr - cl + 1 ) * val ;
-			return ;
-		}
-		ll m = cl + ( ( cr - cl ) >> 1 ) ;
-		maintain ( cl , cr , p ) ;
-		if ( l <= m ) range_add ( l , r , val , cl , m , p << 1 ) ;
-		if ( r > m ) range_add ( l , r , val , m + 1 , cr , p << 1 | 1 ) ;
-		tree [ p ] = tree [ p << 1 ] + tree [ p << 1 | 1 ] ;
-	}
-	void build ( ll s , ll t , ll p ) { 
-		if ( s == t ) {
-			tree [ p ] = ( *arr )[ s ] ;
-			return ;
-		}
-		ll m = s + ( ( t - s ) >> 1 ) ;
-		build ( s , m , p << 1 ) ;
-		build ( m + 1 , t , p << 1 | 1 ) ;
-		tree [ p ] = tree [ p << 1 ] + tree [ p << 1 | 1 ] ;
-	}
-public : 
-    SegtreeLazyRangeAdd < T > () {}
-	explicit SegtreeLazyRangeAdd < T > ( vector < T > v ) {
-		n = v.size () ;
-		n4 = n * 4 ;
-		tree = vector < T > ( n4 , 0 ) ;
-		lazy = vector < T > ( n4 , 0 ) ;
-		arr = &v ;
-		end = n - 1 ;
-		root = 1 ;
-		build ( 0 , end , 1 ) ;
-		arr = nullptr ;
-	}	
-	void show ( ll p , ll depth = 0 ) {
-		if ( p > n4 || tree [ p ] == 0 ) return ;
-		show ( p << 1 , depth + 1 ) ;
-		for ( ll i = 0 ; i < depth ; ++ i ) putchar ( '\t' ) ;
-		printf ( "%d:%d\n", tree [ p ] , lazy [ p ] ) ;
-		show ( p << 1 | 1 , depth + 1 ) ;
-	}
-
-	T range_sum ( int l , int r ) { return range_sum ( l - 1 , r - 1 , 0 , end , root ) ; } 
-
-	void range_add ( ll l , ll r , ll val ) { range_add ( l - 1 , r - 1 , val , 0 , end , root ) ; } 
-};
-
-template < typename T >
-struct heavy_chain_splitting {
+    HLD() {}
+    HLD(int n) {
+        init(n);
+    }
+    void init(int n) {
+        this->n = n;
+        siz.resize(n);
+        top.resize(n);
+        dep.resize(n);
+        parent.resize(n);
+        in.resize(n);
+        out.resize(n);
+        seq.resize(n);
+        cur = 0;
+        adj.assign(n, {});
+    }
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    void work(int root = 0) {
+        top[root] = root;
+        dep[root] = 0;
+        parent[root] = -1;
+        dfs1(root);
+        dfs2(root);
+    }
+    void dfs1(int u) {
+        if (parent[u] != -1) {
+            adj[u].erase(std::find(adj[u].begin(), adj[u].end(), parent[u]));
+        }
+        
+        siz[u] = 1;
+        for (auto &v : adj[u]) {
+            parent[v] = u;
+            dep[v] = dep[u] + 1;
+            dfs1(v);
+            siz[u] += siz[v];
+            if (siz[v] > siz[adj[u][0]]) {
+                std::swap(v, adj[u][0]);
+            }
+        }
+    }
+    void dfs2(int u) {
+        in[u] = cur++;
+        seq[in[u]] = u;
+        for (auto v : adj[u]) {
+            top[v] = v == adj[u][0] ? top[u] : v;
+            dfs2(v);
+        }
+        out[u] = cur;
+    }
+    int lca(int u, int v) {
+        while (top[u] != top[v]) {
+            if (dep[top[u]] > dep[top[v]]) {
+                u = parent[top[u]];
+            } else {
+                v = parent[top[v]];
+            }
+        }
+        return dep[u] < dep[v] ? u : v;
+    }
     
-    using i64 = int64_t ;
+    int dist(int u, int v) {
+        return dep[u] + dep[v] - 2 * dep[lca(u, v)];
+    }
     
-    i64 n , cnt , root ;
-    vector < i64 > size , son , Fa , d , top , id ; vector < i64 > v ;
-    vector < T > val ; SegtreeLazyRangeAdd < T > tree ;gs g ;
-
-    heavy_chain_splitting<T> ( i64 n , i64 root , gs& g , vector < i64 >& v ): n ( n ) , root ( root ) ,g ( g ) , v ( v ) {
-        size.resize ( n ) , son.resize ( n , -1 ) , Fa.resize ( n ) , d.resize ( n ) ,
-        top.resize ( n ) , id.resize ( n ) ,val.resize ( n ) ; cnt = -1 ;
-        init () ;
-    } 
+    int jump(int u, int k) {
+        if (dep[u] < k) {
+            return -1;
+        }
+        
+        int d = dep[u] - k;
+        
+        while (dep[top[u]] > d) {
+            u = parent[top[u]];
+        }
+        
+        return seq[in[u] - dep[u] + d];
+    }
     
-    function < void ( ll , ll ) > dfs1 = [ & ] ( ll now , ll fa ) {
-        Fa [ now ] = fa ; d [ now ] = d [ fa ] + 1 ;
-        for ( i64 i = g.st [ now ] ; i ; i = g.nt [ i ] ) {
-            ll& here = g.to [ i ] ;
-            if ( here == fa ) continue ;
-            dfs1 ( here , now ) ;
-            size [ now ] += size [ here ] ;
-            if ( !~son [ now ] || size [ son [ now ] ] < size [ here ] ) {
-                son [ now ] = here ;}
+    bool isAncester(int u, int v) {
+        return in[u] <= in[v] && in[v] < out[u];
+    }
+    
+    int rootedParent(int u, int v) {
+        std::swap(u, v);
+        if (u == v) {
+            return u;
         }
-        ++ size [ now ] ;
-    };
-
-    function < void ( ll , ll ) > dfs2 = [ & ] ( ll now , ll fa ) {
-        top [ now ] = fa ; id [ now ] = ++ cnt ; val [ cnt ] = v [ now ] ;
-        if ( ~son [ now ] ) dfs2 ( son [ now ] , fa ) ;
-        for ( i64 i = g.st [ now ] ; i ; i = g.nt [ i ] ) {
-            ll& here = g.to [ i ] ;
-            if ( here == Fa [ now ] || here == son [ now ] ) continue ;
-            dfs2 ( here , here ) ;   
+        if (!isAncester(u, v)) {
+            return parent[u];
         }
-    };
-
-    function < void ( ll , ll , ll ) > update = [ & ] ( ll u , ll v , ll w ) mutable {
-        auto& fa = Fa ;
-        while ( top [ u ] != top [ v ] ) {
-            if ( d [ top [ u ] ] < d [ top [ v ] ] ) swap ( u , v ) ;
-            tree.range_add ( id [ top [ u ] ] + 1 , id [ u ] + 1 , w ) ;
-            u = fa [ top [ u ] ] ;
+        auto it = std::upper_bound(adj[u].begin(), adj[u].end(), v, [&](int x, int y) {
+            return in[x] < in[y];
+        }) - 1;
+        return *it;
+    }
+    
+    int rootedSize(int u, int v) {
+        if (u == v) {
+            return n;
         }
-        if ( d [ u ] > d [ v ] ) swap ( u , v ) ;
-        tree.range_add ( id [ u ] + 1 , id [ v ] + 1 , w ) ;
-    };
-
-    function < i64 ( i64 , i64 ) > query = [ & ] ( ll u , ll v ) mutable {
-        auto& fa = Fa ;
-        T sum = 0 ;
-        while ( top [ u ] != top [ v ] ) {
-            if ( d [ top [ u ] ] < d [ top [ v ] ] ) swap ( u , v ) ;
-            sum += tree.range_sum ( id [ top [ u ] ] + 1 , id [ u ] + 1 ) ;
-            u = fa [ top [ u ] ] ;
+        if (!isAncester(v, u)) {
+            return siz[v];
         }
-        if ( d [ u ] > d [ v ] ) swap ( u , v ) ;
-        sum += tree.range_sum ( id [ u ] + 1 , id [ v ] + 1 ) ;
-        return (i64)sum ;
-    };
-
-    function < void ( i64 , i64 ) > rootupdate = [ & ] ( ll root , ll w ) mutable {
-        tree.range_add ( id [ root ] + 1 , id [ root ] + size [ root ]/*  -1 + 1 */ , w ) ;
-    };
-
-    function < i64 ( i64 ) >  rootquery = [ & ] ( ll root ) mutable {
-        return (i64)tree.range_sum ( id [ root ] + 1 , id [ root ] + size [ root ]/*  - 1 + 1  */) ;
-    };
-
-    void init () {
-        dfs1 ( root , root ) ;
-        dfs2 ( root , root ) ;
-        SegtreeLazyRangeAdd < T > tree ( val ) ;
-        this->tree = move ( tree ) ;
+        return n - siz[rootedParent(u, v)];
+    }
+    
+    int rootedLca(int a, int b, int c) {
+        return lca(a, b) ^ lca(b, c) ^ lca(c, a);
     }
 };
