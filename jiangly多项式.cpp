@@ -109,7 +109,7 @@ int MInt<0>::Mod = 1;
 template<int V, int P>
 constexpr MInt<P> CInv = MInt<P>(V).inv();
 
-constexpr int P = 1000000007;
+constexpr int P = 998244353;
 using Z = MInt<P>;
 
 std::vector<int> rev;
@@ -187,7 +187,7 @@ constexpr void idft(std::vector<MInt<P>> &a) {
     }
 }
  
-template<int P = 998244353>
+template<int P = ::P>
 struct Poly : public std::vector<MInt<P>> {
     using Value = MInt<P>;
     
@@ -261,7 +261,8 @@ struct Poly : public std::vector<MInt<P>> {
         while (n < tot) {
             n *= 2;
         }
-        if (((P - 1) & (n - 1)) != 0 || b.size() < 128) {//((P - 1) & (n - 1)) != 0Ã»¿´¶®
+        if (((P - 1) & (n - 1)) != 0 || b.size() < 128) {
+        
             Poly c(a.size() + b.size() - 1);
             for (int i = 0; i < a.size(); i++) {
                 for (int j = 0; j < b.size(); j++) {
@@ -408,16 +409,30 @@ struct Poly : public std::vector<MInt<P>> {
                 }
             } else {
                 int m = (l + r) / 2;
-                work(2 * p, l, m, num.mulT(q[2 * p + 1]).resize(m - l));
-                work(2 * p + 1, m, r, num.mulT(q[2 * p]).resize(r - m));
+                auto need = move(num.mulT(q[2 * p + 1]));
+                need.resize ( m - l ) ;
+                work(2 * p, l, m, need);
+                need = move(num.mulT(q[2 * p]));
+                need.resize ( r - m ) ;
+                work(2 * p + 1, m, r, need);
             }
         };
         work(1, 0, n, mulT(q[1].inv(n)));
         return ans;
     }
+    template <class T>
+    constexpr Value operator() ( T x ) {
+        Value ans = 0 ;
+        Value cnt = 1 ;
+        for ( int i = 0 ; i < this->size () ; ++ i ) {
+            ans += (* this) [ i ] * cnt ;
+            cnt *= x ;
+        }
+        return ans ;
+    }
 };
  
-template<int P = 998244353>
+template<int P = ::P>
 Poly<P> berlekampMassey(const Poly<P> &s) {
     Poly<P> c;
     Poly<P> oldC;
@@ -461,7 +476,7 @@ Poly<P> berlekampMassey(const Poly<P> &s) {
 }
  
  
-template<int P = 998244353>
+template<int P = ::P>
 MInt<P> linearRecurrence(Poly<P> p, Poly<P> q, i64 n) {
     int m = q.size() - 1;
     while (n > 0) {
@@ -480,4 +495,39 @@ MInt<P> linearRecurrence(Poly<P> p, Poly<P> q, i64 n) {
         n /= 2;
     }
     return p[0] / q[0];
+}
+template<int P = ::P, class T1 , class T2>
+constexpr Poly<P> Lagrange (T1 x, T2 y) {
+    int n = x.size () ;
+    vector <Poly<>> M ( 4 * n );
+    std::function<void(int, int, int)> build = [&](int p, int l, int r) {
+        if (r - l == 1) {
+            M[p] = Poly{(int)-x[l], 1};
+        } else {
+            int m = (l + r) / 2;
+            build(2 * p, l, m);
+            build(2 * p + 1, m, r);
+            M[p] = M[2 * p] * M[2 * p + 1];
+        }
+    };
+    build ( 1 , 0 , n ) ;
+    auto M_ = M[1].deriv().eval( x );
+    for ( int i = 0 ; i < n ; ++ i ) {
+        M_ [ i ] = y [ i ] * M_ [ i ].inv () ;
+    }
+    vector<Poly<>> f (4 * n) ;
+    std::function<void(int, int, int)> work = [&](int p, int l, int r) -> void {
+        if (r - l == 1) {
+            if (l < n) {
+                f[p] = Poly{(int)M_[l]};
+            }
+        } else {
+            int m = (l + r) / 2;
+            work(2 * p, l, m);
+            work(2 * p + 1, m, r);
+            f [ p ] = f [ 2 * p ] * M [ 2 * p + 1 ] + f [ 2 * p + 1 ] * M [ 2 * p ] ;
+        }
+    };
+    work ( 1 , 0 , n ) ;
+    return f[1];
 }
